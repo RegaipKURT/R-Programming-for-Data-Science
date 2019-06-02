@@ -1,5 +1,7 @@
 # R programlama için örnek kodlar
 
+print("Merhaba R") # ekrana bir şey yazdırma  
+
 # Değişkene değer atama
 a = 3
 3 -> a
