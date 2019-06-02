@@ -36,12 +36,14 @@ seri3[c(2,3,4)] #seri 3 ün 2,3, ve 4. elemanları sırasıyla
 seri3[2:4] #hemen üstteki ile aynı işi yapıyor
 seri2[seri2<16 & seri2 >12] #seri2 nin 16 dan küçük ve 12'den büyük elemanları
 seri[seri>15 | seri <15] #serinin 15 ten büyük veya 15 ten küçük elemanları (hepsi)
+# & işareti ve anlamına gelir. | işareti ise veya anlamına gelir.
+# bu işaretler yukarıdaki gibi işlemlerde kullanılabilir.
 
+#seri elemanlarını birleştirme
 paste(c("x","y"), 0:10, sep = ",")
 paste(c(3,5), 0:10, sep = "*")
 paste(c(10), 0:5, sep = "*")
-# & işareti ve anlamına gelir. | işareti ise veya anlamına gelir.
-# bu işaretler yukarıdaki gibi işlemlerde kullanılabilir.
+paste(seri3, seri2, sep = "-") #seri3 ve seri2 elemanlarını "-" işaretiyle birleştirecek
 
 
 #Matematiksel fonksiyonalar
