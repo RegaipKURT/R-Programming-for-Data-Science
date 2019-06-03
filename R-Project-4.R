@@ -11,7 +11,7 @@ save.image("kayit.rdata") #şu anki çalışma içeriğimizi bir dosyaya kaydett
 load("kayit.rdata") # kaydettiğimiz dosyayı çalışma ortamına yükeldik.
 
 load(file.choose()) #burada açılan pencereden de yüklemek istediğimiz dosyayı seçebiliriz.
-
+# yukarıdaki konutu program yazarken veriyi yüklemek için de kullanabiliriz.
 ls # dosyayı yükledikten sonra oluşturduğumuz x burada görünecek.
 #denemek için programı açıp kapatın ve değişkenlerin yüklendiğini göreceksiniz.
 
