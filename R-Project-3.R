@@ -54,5 +54,6 @@ iris$Species = as.factor(iris$Species)
 
 iris = cbind(iris, iris$Species==2 & iris$Sepal.Length>5.1)
 
+#VERILERI CALISMA ORTAMINDA GORMEK ISTERSENIZ ASAGIDAKI KODU SILINIZ..
 rm(list = ls()) # ls ile dönen bütün listeyi sil
 #yukarıdaki konutla kısa yoldan bütün çalışma alanını temizledik.
