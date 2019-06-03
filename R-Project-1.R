@@ -7,11 +7,11 @@ a = 3
 3 -> a
 a <- 3
 a
-#her üç durumda da a'nın değeri 3 olarak belirleniyor.
+# her üç durumda da a'nın değeri 3 olarak belirleniyor.
 yazi = "Merhaba R" # string ifadeler "" içinde belirtilir.
 yazi
 
-#Matematiksel operatörler
+# Matematiksel operatörler
 b = 50
 c = 90
 
