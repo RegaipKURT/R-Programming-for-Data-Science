@@ -5,7 +5,7 @@ c = seq(from=1, to = 10, by = 1.5)
 d = rep(10:14, times=3)
 # yukarıdaki kod ile 10 dan 14 e kadar olan sayilari 3 kere tekrar ettik
 e = rep(seq(from=1, to=2, by=0.25), times=2)
-#1'den 2'ye kadar 0.25 artarak giden sayıları 2 kez tekrar ettik.
+#1'den 2'ye kadar 0.25 artarak giden sayıları 2 kez tekrar ettik
 
 length(e) #e serisinin eleman sayısı yani uzunluğu
 a / 3 # a dizisinin her elemanını 3 e böler
