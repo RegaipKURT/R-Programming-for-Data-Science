@@ -1,5 +1,6 @@
 # mclust özellikle büyük veri setleri üzerinde hızlı çalışan bir kümeleme ve sınıflandırma algoritmasıdır.
 # mclust hem sınıflandırma hem kümeleme yapabilir. (Sınıflandırma gözetimli, kümeleme gözetimsiz algoritmadır.)
+
 #Default olarak R içinde yok. O yüzden dışardan yüklememiz lazım
 install.packages("mclust") # paketin yüklenmesini bekleyelim
 
@@ -51,4 +52,4 @@ summary(model) #modelin özeti ve gayet başarılı bir sınıflandırma olduğu
 plot(model, what="scatterplot") #yukarıdaki grafiklerle benzer şekilde oluşturulabilir.
 plot(model)
 
-# densityMclust() modelini de deneyebilirsiniz. Onu öğrenilenlerin tekrarı için eksik bıraktım.
+# densityMclust() modelini de deneyebilirsiniz. Onu öğrenilmesi ve kullanılması için eksik bıraktım.
