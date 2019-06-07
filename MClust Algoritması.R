@@ -1,5 +1,5 @@
 # mclust özellikle büyük veri setleri üzerinde hızlı çalışan bir kümeleme ve sınıflandırma algoritmasıdır.
-
+# mclust hem sınıflandırma hem kümeleme yapabilir. (Sınıflandırma gözetimli, kümeleme gözetimsiz algoritmadır.)
 #Default olarak R içinde yok. O yüzden dışardan yüklememiz lazım
 install.packages("mclust") # paketin yüklenmesini bekleyelim
 
