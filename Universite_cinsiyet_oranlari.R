@@ -1,7 +1,6 @@
 #Dünya Üniversitelerinde Kadın ve Erkek Oranları ve Grafikleştirmesi
 
 veri = read.csv(file.choose()) # veri.csv dosyasını indiriniz ve SOrunca seçiniz.
-sort(veri$School)
 summary(veri) # verinin özet bilgilerine bakıyoruz.
 
 #barplot grafiğini kadın-erkek sayısı farkına göre çizdirelim.
