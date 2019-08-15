@@ -1,0 +1,131 @@
+---
+title: "KEŞİFÇİ VERİ ANALİZİ"
+output: html_notebook
+author: Regaip KURT
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+### Kütüphanelerin Yüklenmesi
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+### Değişken Türlerinin Ayarlanması
+
+```{r}
+veri <- mpg
+print(veri)
+glimpse(veri)
+```
+
+class değişkeni chr tipinde ama bizim bunu factor tipine dönüştürmemiz gerekiyor.
+```{r}
+veri$class <- factor(veri$class)
+glimpse(veri)
+```
+
+displ değişkeninin değerleri 2'den büyükse 1 değilse 0 olacak şekilde değiştirelim.
+```{r}
+veri$displ <- ifelse(veri$displ > 2, 1, 0)
+veri$displ <- as.factor(veri$displ)
+glimpse(veri)
+```
+
+### Veriye İlk Bakış
+#### Genel fonksiyonlar
+```{r}
+head(veri) #ilk 5 satır
+tail(veri) # son 5 satır
+colnames(veri) #kolon isimleri
+rownames(veri) # satır isimleri (çok fazla veride anlamı olmaz)
+nrow(veri) # satır sayısı
+ncol(veri) # dolon sayısı (özellik veya değişken sayısı da denilebilir.)
+glimpse(veri) # veriye ve değişkenlerine hızlı bakış
+summary(veri) #verinin istatistikleri
+fivenum(veri$cty) # bir kolonun 5'li istatistik değerini direk döndürür
+levels(veri$class) # kategorik değişkenleri içeren bir sütundaki kategoriler.
+```
+
+### Sürekli ve Kategorik Değişken Özetleri
+
+Sürekli değişkenlerin özetleri için funModelling kütüphanesinden hızlıca yararlanılabilir.
+
+```{r}
+library(funModeling) #yüklü olmayabilir. yüklenmesi gerekir.
+profiling_num(veri)
+plot_num(veri)
+
+```
+
+### Kategorik Değişkenlerle ilgili bilgi alınması
+
+Burada yine funModelling kütüphanesi kullanılabilir *ŞİDDETLE ÖNERİLİR!*
+```{r}
+freq(veri) #Sadece tek fonksiyonun yaptığı işlere dikkat et!
+```
+
+### Daha detaylı bir bakış
+
+```{r}
+library(psych) #yüklü değilse yüklenmeli
+describe(veri)
+describe.by(veri, group = veri$class) #bir sınıf oluşturup ona göre özetleme
+#ancak ve ancak kategorik bir değişkene göre sınıflandırma yapılabilir!!!
+
+library(Hmisc) # yüklü olmayabilir, yüklenmeli
+Hmisc::describe(veri) # psych ile aynı isimde describe fonksiyonu o yüzden hmisc:: ile belirttik.
+library(pastecs) #yüklü olmayabilir.
+stat.desc(veri)
+
+```
+
+## DataFrame'lerin interaktif Keşfi
+
+### d3Tree Kütüphanesi
+
+```{r}
+#install.packages("d3Tree")
+#d3tree ile bir ağaç yapısı oluşturabiliriz.
+library(d3Tree)
+d3tree(list(
+  root = df2tree(veri,
+                 rootname = "veri",
+                 struct = as.data.frame(veri)),
+  layout = "collapse"
+))
+```
+
+### xplorerr Kütüphanesi
+
+Bu kütüphane veriyi incelememiz için bir shiny application şeklindedir ve kolaylık sağlayabilir.
+```{r}
+#install.packages("xplorerr")
+library("xplorerr")
+app_descriptive()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
