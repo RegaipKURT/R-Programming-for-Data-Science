@@ -1,0 +1,199 @@
+---
+title: "CART"
+output: html_notebook
+---
+
+# CART (Classification and Regression Trees)
+
+## Kütüphanelerin Yüklenmesi
+```{r}
+library(caret)
+library(tidyverse)
+library(AppliedPredictiveModeling)
+library(pls) #kismi en kucuk kareler ve pcr icin
+library(elasticnet)
+library(broom) #tidy model icin
+library(glmnet)
+library(MASS)
+library(ISLR)
+library(PerformanceAnalytics)
+library(funModeling)
+library(Matrix) 
+library(kernlab) #svm
+library(e1071) #svm icin
+library(rpart) #cart icin
+library(pgmm) #olive data seti icin 
+library(dslabs)
+library(rpart.plot) #rpart gorsel icin
+library(partykit) #karar agaci gorseli icin 
+library(ipred) #bagging icin 
+library(randomForest)
+library(gbm)
+library(nnet)
+library(neuralnet)
+library(GGally)
+library(NeuralNetTools) #garson fonksiyonu icin
+library(FNN)
+library(dplyr)
+library(ggpubr)
+```
+
+## Verisetinin yüklenmesi
+
+```{r}
+df <- read.csv("Advertising.csv")
+df <- df[-1]
+head(df)
+```
+
+### Veriye grafikler ve foksiyonlar yardımıyla ilk bakış:
+
+```{r}
+profiling_num(df)
+summary(df)
+ggpairs(df)
+pairs(df,pch=18)
+
+```
+
+## Model Kurma Aşaması
+
+Örnek olması açısından televizyon ile satışlar arasında bir ağaç modeli kuralım
+
+```{r}
+cart_tree <- rpart(sales~TV, data = df)
+cart_tree
+```
+
+Şimdi bir de bütün değişkenlerle model kuralım:
+```{r}
+cart_tree <- rpart(sales~., data = df)
+cat("Modelin çıktısı: \n")
+cart_tree
+cat("Model içinden okunabilecek özellikler:\n")
+names(cart_tree)
+cat("Değişkenlerin modeldeki önemleri:\n")
+cart_tree$variable.importance
+```
+
+
+Modeli plot ile görselleştirebiliriz:
+```{r}
+plot(cart_tree, margin=0.1, main="Cart Tree Karar Ağacı")
+text(cart_tree, col="blue") # cart tree içinden text alıp ekledik plota
+```
+
+Daha güzel görselleştirme de yapan bir kütüphane var ve son derece basit.
+rpart içinden kullanılabilir.
+```{r}
+prp(cart_tree)
+rpart.plot(cart_tree)
+
+```
+
+Bu ağaç yapısı kaç tane köke sahip olmalı ve nerden budamalıyım gibi sorular için yine rpart içinden şu grafiği kullanabiliriz:
+```{r}
+plotcp(cart_tree)
+```
+
+Karar ağacının eksenlerde gösterimi:
+Kolay anlaşılması için modeli sadece TV değişkeniyle kurduğum haliyle tekrar çalıştırdım.
+```{r}
+df %>% mutate(y_tahmin = predict(cart_tree))%>%
+  ggplot()+
+  geom_point(aes(TV, sales)) +
+  geom_step(aes(TV, y_tahmin, col=y_tahmin))
+```
+
+Yatay çizgileri sayarsak algoritmanın kaç parçaya bölerek karar ağacı oluşturduğunu görebilir. Yatay çizgilerin sayısı 7 parça, yani 7'ye bölünmüş.
+Peki neden 7'ye böldükten sonra durdu ve ileri gitmedi. Bunu anlamak için karmaşıklık parametresine bakmamız ve anlamamız lazım.
+
+### Karmaşıklık Parametresi
+
+#### Karmaşıklık parametresi ve minsplit.
+
+minsplit karar ağacının en son kökünde kaç tane gözlem sayısı kalacağını belirtir. Yani ağaç yapısı kurulduktan sonra karar ağacında ilerlerken, en son ağaca geldiğimiz zaman karar verilecek sadece iki gözlem kalmış olacak.
+
+Karmaşıklık parametresi ise ne kadar dallanma olacağını ifade eden parametredir. Karmaşıklık parametresi ne kadar düşük olursa o kadar fazla ağaç oluşur.
+
+Anlamak için modelimizi yeniden kuralım:
+
+```{r}
+cart_tree <- rpart(sales~TV, data = df, 
+                   control = rpart.control(minsplit = 2, cp=0))
+
+#cart_tree #yazdırarak ne kadar uzun bir yapı oluştuğunu görebiliriz.
+
+#tekrar görselleştirip yukarıdaki görsel ile farkına bakalım
+df %>% mutate(y_tahmin = predict(cart_tree))%>%
+  ggplot()+
+  geom_point(aes(TV, sales)) +
+  geom_step(aes(TV, y_tahmin, col=y_tahmin))
+```
+
+### Karar ağacının budanması
+
+Eğer yukarıda bahsettiğimiz ağaç budama (prune) işlemini yapmak istersek aynı isimli prune fonksiyonuyla bunu yapabiliriz.
+
+```{r}
+pruned_cart <- prune(cart_tree, cp = 0.01)
+```
+
+Yine görselleştirip sonuca bakalım:
+
+```{r}
+df %>% mutate(y_tahmin = predict(pruned_cart))%>%
+  ggplot()+
+  geom_point(aes(TV, sales)) +
+  geom_step(aes(TV, y_tahmin, col=y_tahmin))
+```
+
+Gördüğümüz üzere daha uzantısız bir ağaç oluştu. Modeli yazdırıp bakarsak daha rahat anlaşılabilir ne yaptığımız.
+
+```{r}
+pruned_cart
+```
+
+Grafiğini çizip iki grafik araındaki farkı görelim karşılaştıralım.
+
+```{r}
+rpart.plot(cart_tree)
+rpart.plot(pruned_cart)
+```
+
+
+## Model Tuning
+
+train fonksiyonu içindeki method değerinini rpart yaptığımızda karmaşıklık partametresini, rpart2 yaptımızda ise maksimum derinlik parametresini tune etmiş oluruz.
+```{r}
+
+ctrl <- trainControl(method = "cv", number = 10)
+
+cart_grid <- data.frame(
+  cp = seq(0, 0.5, len=25)
+)
+
+cart_tune <- train(sales~., data = df,
+                  method = "rpart",
+                  trControl = ctrl,
+                  tuneGrid = cart_grid,
+                  preProc = c("center", "scale"))
+
+cart_tune
+cart_tune$bestTune
+cart_tune$finalModel
+plot(cart_tune)
+rpart.plot(cart_tune$finalModel, main="Final Modelinin Yapısı")
+```
+
+
+
+## Sonuç
+
+  Sonuç olarak ağaçlar bazen en dallanmış budaklanmış halleriyle :) bazen de budanmış veya optimum düzeyde oluşturulmuş haliyle kullanılabilir.
+
+  Eğer genelleme yapmasını istemediğimiz, genellenebilir bir model kurmak istemediğimiz bir durum varsa, karar ağacını en uzatmamız daha iyi olur. Çünkü mevcut durumu tanımlamada karar ağaçları en son birime kadar inerek karar alınmasını sağlayabilir. Örnek olarak sadece o anki belirli bir şirkete eleman alırken verilecek maaşı belirlemek için karar ağacı en dallanmaış haliyle kullanılırsa en iyi sonucu verir. Ama eğer biz kurduğumuz modeli başka şirketler için de kullanmak istiyorsak, yani genellenebilir bir model istiyorsak, optimum noktada ağacı sonlandırmak daha doğru sonuç verir.
+  
+  Nihayatinde, genellenebilirlik kaygısı olmayan, mevcut durumu tanımlayan modellerde cp = 0, minsplit = 2 olarak belirlenebilir. Ama genel bir model kurulup kullanılmak istendiğinde optimum noktadan kesmek daha doğru karar vermemizi sağlar.
+
+
