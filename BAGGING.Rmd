@@ -1,0 +1,231 @@
+---
+title: "BAGGING TREES"
+output: html_notebook
+---
+
+# BAGGING TREES (Bootstrap Agregating)
+
+## Kütüphanelerin Yüklenmesi
+```{r}
+library(caret)
+library(tidyverse)
+library(AppliedPredictiveModeling)
+library(pls) #kismi en kucuk kareler ve pcr icin
+library(elasticnet)
+library(broom) #tidy model icin
+library(glmnet)
+library(MASS)
+library(ISLR)
+library(PerformanceAnalytics)
+library(funModeling)
+library(Matrix) 
+library(kernlab) #svm
+library(e1071) #svm icin
+library(rpart) #cart icin
+library(pgmm) #olive data seti icin 
+library(dslabs)
+library(rpart.plot) #rpart gorsel icin
+library(partykit) #karar agaci gorseli icin 
+library(ipred) #bagging icin 
+library(randomForest)
+library(gbm)
+library(nnet)
+library(neuralnet)
+library(GGally)
+library(NeuralNetTools) #garson fonksiyonu icin
+library(FNN)
+library(dplyr)
+library(ggpubr)
+```
+
+## Verisetinin yüklenmesi
+
+```{r}
+df <- Boston
+head(df)
+```
+
+### Veriye grafikler ve foksiyonlar yardımıyla ilk bakış:
+
+```{r}
+profiling_num(df)
+glimpse(df)
+summary(df)
+ggpairs(df)
+pairs(df,pch=18)
+```
+
+### Train-Test Ayrımı
+
+```{r}
+set.seed(3456)
+train_indeks <- createDataPartition(df$medv, p=0.8, list = F, times = 1)
+train <- df[train_indeks, ]
+test <- df[-train_indeks, ]
+train
+
+train_x <- train %>% dplyr::select(-medv)
+train_y <- train$medv
+test_x <- test %>% dplyr::select(-medv)
+test_y <- test$medv
+```
+
+## Bagging Tree Kurulması
+
+```{r}
+# 1. yöntem
+bag_tree <- ipredbagg(train_y, train_x)
+bag_tree
+names(bag_tree)
+# 2. yöntem
+bag_tree2 <- bagging(medv~., data = train)
+summary(bag_tree2)
+
+# random forest ile kullanımı
+# Eğer random forest ın mtry parametresi bağımsız değişken sayısına eşitlenirse bagging yapılmış olur.
+bag_forest <-
+  randomForest(
+    medv ~ .,
+    data = train,
+    mtry = ncol(train) - 1, #veya ncol(train_x) yazıp 1 çıkarmayabilirdik
+    importance = T,
+    ntrees = 500
+  )
+bag_forest
+summary(bag_forest)
+importance(bag_forest) # değişkenlerinönem düzeyleri
+varImpPlot(bag_forest)
+```
+
+
+## Tahmin
+
+Biz burada bag_forest ile tahmin yapıp test hatamıza bakacağız.
+
+```{r}
+pred_y <- predict(bag_forest, test_x)
+
+defaultSummary(data.frame(obs=test_y,
+                          pred=pred_y))
+
+```
+
+
+#### Acaba bagging yapmanın tek bir ağaçla tahmine göre hatayı düşürmeye katkısı nedir? Bunu görmek için bir plot çizdirip sonuçlarına bakalım.
+
+```{r}
+plot(bag_forest, col="dodgerblue", lwd=2, 
+     main = "Bagged Trees: Hata ve Ağaç Sayısı Karşılaştırılması")
+grid()
+```
+
+
+Gördüğümüz gibi ağaç sayısı arttıkça hatamız düşüyor
+
+## Model Tuning
+
+Model Tuning işlemini random forest üzerinden mtry değerini bağımsız değişken sayısına eşitleyerek yapacağız. 
+
+```{r}
+ctrl <- trainControl(method = "cv", number = 10)
+
+mtry <- ncol(train_x)
+tune_grid <- expand.grid(mtry = mtry)
+
+bag_tune <- train(train_x, train_y,
+                  method="rf",
+                  tuneGrid = tune_grid,
+                  trainControl=ctrl)
+bag_tune
+```
+
+Aslında br tune işleminden daha çok validasyon işlemi yapmış olduk.
+
+## BONUS: RANDOM FOREST
+
+Random Forest için burdan devem etmek daha anlaışılır olur.
+
+```{r}
+rf_fit <- randomForest(train_x, train_y, importance = T)
+#büyük veri setlerinde importance parametresi işlemi yavaşlatabilir.
+
+importance(rf_fit)
+varImpPlot(rf_fit)
+# var importance plot
+```
+
+### Random Forest ile Tahmin
+
+```{r}
+pred_y <- predict(rf_fit, test_x)
+
+plot(pred_y, test_y, xlab="Tahmin Edilen Değerler",
+     ylab="Gerçek Değerler",
+     main="Random Forest: \nTahmin ve Gerçek Değer Karşılaştırması",
+     col="turquoise4", pch=19)
+      
+grid()
+
+defaultSummary(data.frame(obs=test_y,
+                          pred=pred_y))
+```
+
+Hatamızı hesapladıktan sonra görüyoruz ki iyi bir sonuç ortaya çıkmış.
+
+## Model Tuning
+
+Random Forest için tune edilecek iki parametre vardır. Bunlardan birincisi mtry ikincisi ise ntrees argümanı. BU iki değeri arayarak en iyi sonucu verenleri kullanabiliriz.
+
+```{r}
+ctrl <- trainControl(method = "cv", number = 10)
+
+tune_grid <- expand.grid(mtry = c(2:8))
+
+rf_tune <- train(train_x, train_y,
+                  method="rf",
+                  tuneGrid = tune_grid,
+                  trainControl=ctrl)
+rf_tune
+plot(rf_tune)
+
+rf_tune$results %>% filter(mtry == as.numeric(rf_tune$bestTune))
+
+defaultSummary(data.frame(obs=test_y,
+                          pred=predict(rf_tune, test_x)))
+```
+
+Sonuç olarak 6 değerini mtry argümanı için en iyi değer olarak bulduk.
+
+## Random Search ile Model Tune
+
+Burada bir önerim var: Çok fazla sayıda mtry argümanı verip sonuç beklemek yerine mantıklı bir aralıkta 3 tane sayı vererek grafiğini çizdirirsek, grafiğin en düşük olduğu noktada yeniden aralık daraltılarak arama yapmak daha mantıklı olacaktır. 
+
+```{r}
+ctrl <- trainControl(method = "cv", number = 10, search = "random")
+
+tune_grid <- expand.grid(mtry = c(2:8))
+
+rf_random_tune <- train(train_x, train_y,
+                  method="rf",
+                  tuneLength = 5, #kaç rasgele deneme yapacağı
+                  trainControl=ctrl)
+
+rf_random_tune
+plot(rf_random_tune)
+
+rf_random_tune$results %>% filter(mtry == as.numeric(rf_random_tune$bestTune))
+
+defaultSummary(data.frame(obs=test_y,
+                          pred=predict(rf_random_tune, test_x)))
+```
+
+  Random olarak mtry için 2,4,7,10,13 değelerini denemiş ve en optimum değer olarak 7 yi seçmiş. Biz ise 6 değerinin en düşük RMSE değerinde olduğunu biliyoruz ve 6 ya en yakın olanı seçmesi son derece mantıklı.
+
+
+
+
+
+
+
+
+
