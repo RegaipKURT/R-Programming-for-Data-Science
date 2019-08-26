@@ -1,0 +1,150 @@
+---
+title: "R Notebook"
+output: html_notebook
+author: M. Vahit Keskin
+---
+
+### M. Vahit Keskin'in Udemy Derslerinden alıntılanmıştır.
+
+# XGBoost 
+
+
+## Giris 
+Ozellikleri
+
+Hiz: 
+XGBoost OpenMD sayesinde otomatik olarak paralel hesaplama yapar. Boylece klasik GBM'den 10 kat daha hizli calisir.
+
+Girdi Tipleri: 
+Yogunluk matrisi - R'in yogunluk matrisi: matrix
+Seyrek matrisi - R'in seyreklik matrisi -  Matrix::dgCMatrix
+Kendi veri sinifi: xgb.DMatrix
+
+Seyreklik: 
+Regresyon ya da siniflandirma problemleri icin seyrek girdileri kabul eder buna gore optimize edilmistir. 
+
+Ozellestirme:
+Objective fonksiyonlari ve evaluation fonksiyonlari ozellestirilebilir.
+Yani makine ogrenmesi problem turune gore olceklenebilir ve basari degerlendirme kriterleri de duzenlenebilir.
+
+Kurulum
+```{r}
+#en guncel versiyon icin
+#install.packages("drat", repos="https://cran.rstudio.com")
+#drat:::addRepo("dmlc")
+#install.packages("xgboost", repos="http://dmlc.ml/drat/", type = "source")
+
+#cran versiyonu icin
+install.packages("xgboost")
+library(xgboost)
+```
+
+
+## Model 
+
+Model
+```{r}
+
+xgboost_fit <-xgboost(data = as.matrix(train_x),
+        label = train_y, 
+        booster = "gblinear",
+        max.depth = 2,
+        eta = 1,
+        nthread = 2, 
+        nrounds = 1000)
+
+
+dtrain <- xgb.DMatrix(data = as.matrix(train_x), label = train_y)
+dtest <- xgb.DMatrix(data = as.matrix(test_x), label = test_y)
+dtrain
+xgboost_fit <-xgboost(data = dtrain, 
+        booster = "gblinear",
+        max.depth = 2,
+        eta = 1,
+        nthread = 2, 
+        nrounds = 3)
+
+xgboost_fit
+
+
+class(dtrain)
+
+
+imp_matris <- xgb.importance(model = xgboost_fit)
+imp_matris
+
+xgb.plot.importance(imp_matris)
+
+```
+
+
+
+Model Takip: watchlist
+```{r}
+
+watchlist <- list(train = dtrain, test = dtest)
+
+xgb_fit <- xgb.train(data = dtrain, 
+                     booster = "gblinear",
+                     max.depth = 4,
+                     eta = 0.1, 
+                     nthread = 2,
+                     nrounds = 100,
+                     watchlist = watchlist)
+
+imp_matris <- xgb.importance(model = xgb_fit)
+xgb.plot.importance(imp_matris)
+xgb_fit$evaluation_log
+```
+
+
+
+## Tahmin
+
+```{r}
+predict(xgb_fit, as.matrix(test_x))
+
+plot(predict(xgb_fit, as.matrix(test_x)), test_y,
+     xlab = "Tahmin Edilen", ylab = "Gercek",
+     main = "Tahmin Edilen vs Gercek: XGBoost",
+     col = "dodgerblue", pch = 20)
+grid()
+abline(0, 1, col = "darkorange", lwd = 2)
+
+library(caret)
+defaultSummary(data.frame(obs = test_y, 
+                            pred = predict(xgb_fit, as.matrix(test_x))))
+
+```
+
+
+## Model Tuning
+```{r}
+
+
+ctrl <- trainControl(method = "cv", number = 10)
+
+xgb_grid <- expand.grid(
+  nrounds = 1000,
+  lambda = c(1,2,3),
+  alpha = c(0, 0.5, 1),
+  eta = c(0, 0.5, 1)
+  
+)
+
+
+xgb_tune_fit <- train(
+  x = data.matrix(train_x),
+  y = train_y,
+  trControl = ctrl,
+  tuneGrid = xgb_grid,
+  method = "xgbLinear"
+)
+
+defaultSummary(data.frame(obs = test_y, 
+                            pred = predict(xgb_tune_fit, as.matrix(test_x))))
+
+
+
+```
+
