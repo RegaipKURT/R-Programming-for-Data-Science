@@ -148,3 +148,39 @@ defaultSummary(data.frame(obs = test_y,
 
 ```
 
+## Model Kaydetme
+```{r}
+save(xgb_tune_fit, file = "son_model.rda")
+#deneme yapalım
+rm(xgb_tune_fit) #kurduğumuz modeli kaldırıp dışarıdan alalım
+load("son_model.rda")
+#modeli yüklediğimizde daha önce kaydettiğimiz isimle kullanabilir
+#zaten yükleme yapıldığında environment kısmına ismiyle gelecektir ve o isimden kullanabiliriz.
+
+defaultSummary(data.frame(obs = test_y, 
+                            pred = predict(xgb_tune_fit, as.matrix(test_x))))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
