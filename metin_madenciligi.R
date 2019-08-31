@@ -180,6 +180,6 @@ attributes(model_kume)
 model_mclust <- Mclust(data = uzaklık)
 
 plot(model_mclust$classification)
-
+plot(model_mclust$BIC)
 model_mclust$modelName
 summary(model_mclust)
