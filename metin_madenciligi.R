@@ -183,14 +183,3 @@ plot(model_mclust$classification)
 
 model_mclust$modelName
 summary(model_mclust)
-
-
-
-
-
-
-
-
-
-
-
