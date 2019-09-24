@@ -1,0 +1,359 @@
+---
+title: "Titanic: Machine Learning From Disaster"
+author: "Regaip Kurt"
+---
+
+## Titanic Verisetinin R ile İncelenmesi
+
+
+Titanic veriseti adından da anlaşılacağı üzre titanic gemisindeki yolcuların bilgilerini içermektedir. Survived bağımlı değişkenimizin yer aldığı kolon ve 
+11 diğer bağımsız değişkenden oluışan bir verisetidir. Makine öğrenmesine girişte sık eğitim amaçlı sık kullanılan verisetlerinden birisidir.
+
+Biz de burada titanic veriseti üzerinden xgboost algoritmasının nasıl kullanııldığını görmeye çalışacağız. 
+
+
+Kütüphanelerin import edilmesi:
+```{r}
+library(tidyverse)
+library(dplyr)
+library(funModeling)
+library(ggplot2)
+library(xgboost)
+```
+
+
+Verinin import edilmesi:
+```{r}
+train_data <- read.csv("titanic/train.csv")
+test_data <- read.csv("titanic/test.csv")
+```
+
+Verinin kolon isimlerine bkalım
+
+```{r}
+colnames(train_data)
+```
+
+
+İlk bakışta görüleceği gibi bağımlı değişkenimiz olan Survive kolonuna etki etmeyecek PassengerId ve Name gibi kolonlar görülüyor. Bu kolonları sonuca bir etkisi olmadığını bildiğimiz için verisetimizden kaldıracağız.
+
+```{r}
+train_data <- select(train_data, -c(PassengerId, Name))
+colnames(train_data)
+```
+
+```{r}
+plot(train_data)
+```
+
+Diğer değişkenlerle ilgili karar vermeden önce eksik gözlemlerimiz var mı, varsa ne yapabiliriz bir inceleyelim.
+
+```{r}
+colSums(is.na(train_data))
+```
+
+Eksik gözlemlerimiz olduğunu gördük ve bu eksikliğin sadece age kolonunda ve tek başına meydana geldiğini anladık. Bu eksikliği tahmin tahmin modeli kurarak veya ortalama, medyan gibi değerlerle doldurmak ne kadar doğru olabilir? Bu sorunun cevabını verebilmemiz için eksik gözlemlerin tüm gözlemlere oranına bakmamız ve eksikliğin rastgele olup olmadığının cevabını vermemiz gerekiyor. 
+
+```{r}
+library(BaylorEdPsych)
+eksik_gozlem_test <- LittleMCAR(train_data)
+print("Eksik Gözlem Sayısı ve Oranları")
+eksik_gozlem_test$amount.missing
+
+
+```
+
+Gördüğümüz gibi eksiklik sadece "Age" kolonunda ve 177 eksik gözlem var. Bu gözlemin tüm gözlemlere oranı %19.8 civarında. Veribilimciler arasında %15 üstündeki oranlarda verinin silinmesinin doğru olmadığı yönünde bir görüş mevcut. Ben burada kararsız kaldığım için iki yöntem deneyip iki veriseti üzerinden ilerleyeceğim. 1. yöntemde eksik verileri silip kalan verilerle tahmin yaparken, 2. yöntemde eksik veriyi random forest ve knn modellleri le tahmin edip doldurmaya çalışacağım. Şimdi bu yöntemleri uygulamadan önce diğer gözlemlerde dönüştürme işlemlerimizi yapalım ve ardından iki yöntemle train ve test verilerimizi oluşturalım.
+
+### Verisetinin özet istatistikleri
+
+```{r}
+summary(train_data)
+```
+
+Sex, Ticket, Cabin ve Embarked değişkenlerini integer değişkenlere çevirmemiz gerekiyor öncelikle.
+
+```{r}
+train_data$Sex <- as.integer(train_data$Sex)
+train_data$Ticket <- as.integer(train_data$Ticket)
+train_data$Cabin <- as.integer(train_data$Cabin)
+train_data$Embarked <- as.integer(train_data$Embarked)
+
+#age'i random forest ile kullanacağımız için onu da integer yapıyorum.
+train_data$Age <- as.integer(train_data$Age)
+
+summary(train_data)
+colSums(train_data)
+glimpse(train_data)
+```
+
+Şimdi age kolonundaki eksik gözlemleri random forest ile tahmin edip yeni veriseti oluşturalım.
+
+
+```{r}
+library(missForest)
+library(DMwR)
+
+#bir de knn uyguladık
+knn_data <- knnImputation(train_data, k=10)
+rf_data <- missForest(train_data, ntree = 10)
+
+rftree_data <- rf_data$ximp
+
+l <- sapply(train_data, FUN = function(x) which(is.na(x)))
+
+rftree_data$Age <- as.integer(rftree_data$Age)
+
+knn_data$ Age <- as.integer(knn_data$Age)
+```
+
+
+Şimdi ise eksik gözlemleri sileceğimiz verisetini oluşturalım.
+
+```{r} 
+tam_veri <- train_data[complete.cases(train_data),]
+anyNA(tam_veri)
+tam_veri
+```
+
+```{r}
+```
+
+## Model oluşturma aşamaları
+
+### Orjinal verilerle oluşturulan model
+
+```{r}
+library(caret)
+train_indeks <- createDataPartition(tam_veri$Survived, p = .8, list = FALSE, times = 1)
+
+train <- train_data[train_indeks,]
+test  <- train_data[-train_indeks,]
+
+train_x <- train %>% dplyr::select(-Survived)
+train_y <- train$Survived
+test_x <- test %>% dplyr::select(-Survived)
+test_y <- test$Survived
+
+#tek bir veri seti
+training <- data.frame(train_x, Survived = train_y)
+
+d_train <- xgb.DMatrix(data = as.matrix(train_x), label = train_y)
+
+d_test <- xgb.DMatrix(data = as.matrix(test_x), label = test_y)
+
+xgb_model <- xgboost(data = d_train, max.depth=2, eta=1, ntread=2,
+                     nrounds = 20, objective="binary:logistic", verbose = 1)
+
+bst <- xgb.train(data = d_train,  max.depth=1, eta=0.34, ntread=2,
+          nrounds = 31, eval.metric="error", gamma=1.7,
+          eval.metric="logloss", objective = "binary:logistic")
+
+
+pred_y_xgb <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb2 <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb
+test_y
+
+sonuclar <- data.frame(pred=pred_y_xgb, obs=test_y)
+sonuclar
+
+confusionMatrix(factor(test_y), sonuclar$pred, positive = "1")
+
+```
+
+
+### KNN verisiyle oluşturulan model
+```{r}
+library(caret)
+train_indeks <- createDataPartition(knn_data$Survived, p = .8, list = FALSE, times = 1)
+
+train <- knn_data[train_indeks,]
+test  <- knn_data[-train_indeks,]
+
+train_x <- train %>% dplyr::select(-Survived)
+train_y <- train$Survived
+test_x <- test %>% dplyr::select(-Survived)
+test_y <- test$Survived
+
+#tek bir veri seti
+training <- data.frame(train_x, Survived = train_y)
+
+d_train <- xgb.DMatrix(data = as.matrix(train_x), label = train_y)
+
+d_test <- xgb.DMatrix(data = as.matrix(test_x), label = test_y)
+
+xgb_model <- xgboost(data = d_train, max.depth=2, eta=1, ntread=2,
+                     nrounds = 20, objective="binary:logistic", verbose = 1)
+
+bst <- xgb.train(data = d_train,  max.depth=1, eta=0.34, ntread=2,
+          nrounds = 31, eval.metric="error", gamma=1.7,
+          eval.metric="logloss", objective = "binary:logistic")
+
+
+pred_y_xgb <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb2 <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb
+test_y
+
+sonuclar <- data.frame(pred=pred_y_xgb, obs=test_y)
+sonuclar
+
+confusionMatrix(factor(test_y), sonuclar$pred, positive = "1")
+```
+
+### Random Forest verisiyle oluşturulan model
+```{r}
+library(caret)
+train_indeks <- createDataPartition(rftree_data$Survived, p = .8, list = FALSE, times = 1)
+
+train <- rftree_data[train_indeks,]
+test  <- rftree_data[-train_indeks,]
+
+train_x <- train %>% dplyr::select(-Survived)
+train_y <- train$Survived
+test_x <- test %>% dplyr::select(-Survived)
+test_y <- test$Survived
+
+#tek bir veri seti
+training <- data.frame(train_x, Survived = train_y)
+
+d_train <- xgb.DMatrix(data = as.matrix(train_x), label = train_y)
+
+d_test <- xgb.DMatrix(data = as.matrix(test_x), label = test_y)
+
+xgb_model <- xgboost(data = d_train, max.depth=2, eta=1, ntread=2,
+                     nrounds = 20, objective="binary:logistic", verbose = 1)
+
+bst <- xgb.train(data = d_train,  max.depth=1, eta=0.34, ntread=2,
+          nrounds = 31, eval.metric="error", gamma=1.7,
+          eval.metric="logloss", objective = "binary:logistic")
+
+
+pred_y_xgb <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb2 <- factor(ifelse(predict(bst, as.matrix(test_x))<0.5,0,1))
+pred_y_xgb
+test_y
+
+sonuclar <- data.frame(pred=pred_y_xgb, obs=test_y)
+sonuclar
+
+confusionMatrix(factor(test_y), sonuclar$pred, positive = "1")
+```
+
+SOnuç olarak random forest modelini kullanmaya karar verdim ve bu modeli optimize ederek tahmin yapmaya çalışacağız.
+
+## Model Tuning and optimization
+
+```{r}
+
+
+
+train_indeks <- createDataPartition(rftree_data$Survived, p = .8, list = FALSE, times = 1)
+
+train <- rftree_data[train_indeks,]
+test  <- rftree_data[-train_indeks,]
+
+train_x <- train %>% dplyr::select(-Survived)
+train_y <- train$Survived
+test_x <- test %>% dplyr::select(-Survived)
+test_y <- test$Survived
+
+#tek bir veri seti
+training <- data.frame(train_x, Survived = train_y)
+
+d_train <- xgb.DMatrix(data = as.matrix(train_x), label = train_y)
+
+d_test <- xgb.DMatrix(data = as.matrix(test_x), label = test_y)
+
+
+ctrl <- trainControl(method = "cv",
+                     number = 10,
+                     summaryFunction = twoClassSummary, 
+                     classProbs = TRUE)
+
+xgb_grid <- expand.grid(eta = c(0.05,0.03, 0.02), 
+                      nrounds = c(10, 20, 30, 50, 75,100),  
+                      max_depth = 1:10,  
+                      min_child_weight = c(2.0, 2.25, 1.75),  
+                      colsample_bytree = c(0.3, 0.4, 0.5), 
+                      gamma = c(0, 0.2),
+                      subsample = 1)
+
+dim(xgb_grid)
+
+glimpse(rftree_data)
+
+rftree_data$Survived <- as.factor(rftree_data$Survived)
+levels(rftree_data$Survived)<-make.names(levels(factor(rftree_data$Survived)))
+
+xgb_tune <- train(Survived~., data = rftree_data,
+                  method = "xgbTree",
+                  tuneGrid = xgb_grid,
+                  trControl = ctrl,
+                  metric = "ROC")
+xgb_tune$bestTune
+plot(xgb_tune)
+
+pred <- predict(xgb_tune, test_x)
+pred <- ifelse(pred == "X1", 1, 0)
+test_y <- ifelse(test_y == "X1", 1, 0)
+pred <- factor(pred)
+
+confusionMatrix(pred, factor(test_y), positive = "1")
+
+```
+
+```{r}
+test_verisi <- select(test_data, -c(PassengerId, Name))
+head(test_verisi)
+test_verisi$Sex <- as.integer(test_verisi$Sex)
+test_verisi$Ticket <- as.integer(test_verisi$Ticket)
+test_verisi$Cabin <- as.integer(test_verisi$Cabin)
+test_verisi$Embarked <- as.integer(test_verisi$Embarked)
+
+#age'i random forest ile kullanacağımız için onu da integer yapıyorum.
+test_verisi$Age <- as.integer(test_verisi$Age)
+Pass_id <- select(test_data, PassengerId)
+```
+
+
+```{r}
+test_verisi <- missForest(test_verisi, ntree = 10)
+
+test_verisi <- test_verisi$ximp
+test_verisi$Age = as.integer(test_verisi$Age)
+glimpse(test_verisi)
+```
+
+
+
+```{r}
+pred <- predict(xgb_tune, test_verisi)
+pred <- ifelse(pred == "X1", 1, 0)
+pred <- factor(pred)
+length(Pass_id$PassengerId)
+```
+
+```{r}
+sonuc = data.frame("PassengerId"=Pass_id, "Survived"=pred, row.names = FALSE)
+sonuc = sonuc[,c("PassengerId", "Survived")]
+write.csv(sonuc, file = "tahminler.csv",row.names=FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
