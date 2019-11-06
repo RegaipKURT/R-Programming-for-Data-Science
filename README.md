@@ -1,6 +1,6 @@
 # R-Project-Giris
-Giris Seviyesinde R programlama dili kodları.
+R programlama dili örnek kodları.
 Veri Bilimi için oluşturulmuştur.
 
-R-Project-* kısmı Şadi Evren ŞEKER'in ders videoları ile paraleldir:
+Giris Eğitimi klasöründe R-Project-* kısmı Şadi Evren ŞEKER'in ders videoları ile paraleldir:
 https://www.youtube.com/playlist?list=PLh9ECzBB8tJMedZGEJAT25f7EJrAj13fu
