@@ -1,3 +1,26 @@
+"""
+###VERİSETİNDEKİ EKSİK GÖZLEMLERİ DOLDURMANIN YÖNTEMLERİ
+1) DOĞRUSAL İNTERPOLASYON YÖNTEMİ: Bir doğru üzerindeki eksik bir noktayı bulmaya çalışır. 
+Dolayısıyla formülü nokta formülüne benzerdir. Verisetinde doğrusallık varsa bir başka değişkendeki 
+doğrusal artışın kendi değişkenimiz üzerindeki etkisinden faydalanarak eksik değerleri bulabiliriz.
+
+2) MAKSİMUM BEKLENTİ YÖNTEMİ: İlk olarak belirlenen bir ratgele değer üzerinden 
+belirlenen hassasiyete ulaşılana kadar, aritmetik ortalamanın rastgele değerden farkı 
+yine aritmetik ortalamaya eklenerek devam edilir. Ortalamanın belirlenen değerden farkı 
+hassasiyet değerinden küçük olana kadar devam edilir ve belirlenen değere ulaşıldığında 
+bütün eksik gözlemler o değerle doldurulur.
+
+3) JACKKNIFE YÖNTEMİ: Maksimum beklentiden farklı olarak bütün eksik değerlerin aynı sonuçla doldurulması 
+yerine, her eksik değer için ayrı hesaplama yapılmasıdır. Bir kere hesaplanan değer artık bilinen değer 
+olarak kabul edilip hesalamada bu değer bilinenler arsında kullanılır.
+
+4) MODELLEME YÖNTEMİ: Belirli bir model belirlenerek bu model ile eksik değerler tahmin edilir.
+
+5) EKSİK VERİYİ SİLME: Bu yöntemde eksik veriler silinir. Fakat veriseti küçükse bu yöntemi tercih etmek 
+verisetini daha da küçülteceğinden modelin başarısını etkileyecektir.
+
+ÖRNEK OLARAK BUNLARI SÖYLEYEBİLİRİZ AMA BİRÇOK BAŞKA YÖNTEM DE BULUNMAKTADIR.
+"""
 library(DMwR)
 library(ISLR)
 
