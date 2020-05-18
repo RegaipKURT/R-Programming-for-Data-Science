@@ -1,4 +1,13 @@
 #AYKIRI GÖZLEMLER
+#AYKIRI GÖZLEMLER 20 YIL ÖNCE VERİSETİNİ BOZAN DEĞERLER OLARAK GÖRÜLÜP SİLİNİRKEN,
+#ARTIK VERİNİN EN DEĞERLİ KISMI OLARAK GÖRÜLÜYOR. 
+#ÖZELLİKLE SİBER GÜVENLİK, HİLELİ İŞLEMLER, SAHTECİLİK GİBİ KONULARDA AYKIRI GÖZLEMLER
+#ALTIN DEĞERİNDEKİ VERİYİ BARINDIRIRLAR. ÇÜNKÜ BU KONULARDA ULAŞMAK İSTEDİĞİMİZ ASIL ŞEY
+#TAM DA BU AYKIRILIK İLE İLİŞKİLİDİR. 
+#YANİ AYKIRI GÖZLEMLER DOLDURULMAK, TAHMİN EDİLMEK VEYA SİLİNMEK ZORUNDA DEĞİLDİR.
+
+            ### İSTATİSTİK AYKIRI OLANI BULMAKLA İLGİLENİR. ###
+       ### YOKSA ORTALAMAYI BULMANIN KİMSEYE BİR FAYDASI YOKTUR. ###
 
 set.seed(54)
 veri <- rnorm(100)
@@ -206,35 +215,3 @@ points(df[aykirilar, c("Sepal.Length", "Sepal.Width")],
        cex=3,
        col="blue"
        )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
