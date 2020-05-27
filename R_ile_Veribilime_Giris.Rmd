@@ -1,6 +1,7 @@
 ---
 title: "R ile Veri Bilimi'ne Giriş"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -423,7 +424,7 @@ En sık karşılaşılan yöntem hold out olmasına rağmen tavsiye edilmez. Fak
 
 #### KNN (K NEAREST NEIGHBORHOOD) / K (SAYIDA) EN YAKIN KOMŞU ALGORİTMASI
 
-KNN algoritması k--means gibi bir kümeleme algoritmasıdır. Fakat gözetimli bir algoritma olarak çalışır. Algoritma gözetimli olduğu için verisetindeki kümeler bilinir. Dolayısıyla kendisi kümeleri bulmak yerine şunu yapar; Yeni bir gözlem geldiğinde önceden gördüğü ve öğrendiği verisetinde (uzayda) yeni gelen noktaya en yakın k sayıda noktaya bakar. Baktığı k sayıda nokta çoğunlukla hangi kümeye aitse veya yeni nokta hangilerine daha yakınsa, yeni gelen gözlemi de o kümedendir diye tahmin eder. Tıpkı k-means gibi burada da mesafe ölçmek için kullanılacak yöntem çok önemlidir. Fakat bundan daha önemli olan bakılacak komşu sayısının yani k değerinin kaç olduğunu belirlemektir. Bazı kaynaklarda k değerinin gözlem değerinin karekökü olarak belirlenebileceği belirtilirken, bazı kaynaklarda ise gözlem sayısının karekökünü orta nokta kabul edip ona göre k değerleri hesaplamak önerilir.
+KNN algoritması k--means gibi bir kümeleme algoritmasıdır.(aslında sınıflandırma algoritmasıdır ama şimdilik pek fark yok denilebilir.)  Fakat gözetimli bir algoritma olarak çalışır. Algoritma gözetimli olduğu için verisetindeki kümeler bilinir. Dolayısıyla kümeleri kendisi bulmak yerine şunu yapar; Yeni bir gözlem geldiğinde önceden gördüğü ve öğrendiği verisetinde (uzayda) yeni gelen noktaya en yakın k sayıda noktaya bakar. Baktığı k sayıda nokta çoğunlukla hangi kümeye aitse veya yeni nokta hangilerine daha yakınsa, yeni gelen gözlemi de o kümedendir diye tahmin eder. Tıpkı k-means gibi burada da mesafe ölçmek için kullanılacak yöntem çok önemlidir. Fakat bundan daha önemli olan bakılacak komşu sayısının yani k değerinin kaç olduğunu belirlemektir. Bazı kaynaklarda k değerinin gözlem değerinin karekökü olarak belirlenebileceği belirtilirken, bazı kaynaklarda ise gözlem sayısının karekökünü orta nokta kabul edip ona göre k değerleri hesaplamak önerilir.
 
 ```{r}
 library(class)
@@ -449,18 +450,20 @@ tahmin <- knn(egitim_v, test_v, egitim_h, k = 6)
 ```
 
 
-Yukarıda modelin sonuçları görülüyor. Fakat Accuracy, Sensitivity, Specificity, Kappa gibi birçok metrik ölçülmüş. Bunların hepsi iyi olsa bile bu modelin başarılı olduğu anlamına gelmez. Şöyle bir örnek verelim; 100 tane kedi köpek resmi arasından hangisinin kedi hangisinin köpek olduğunu bulmak istediğimizde, eğer test setimizde sadece 10 kedi resmi varsa ve model hepsini köpek olarak tahmin etmişse, Accuracy ve Sensitivity %90 çıkmasına rağmen Specificity 0% çıkar. Köpek olma durumunu pozitif olarak belirlediğimizde;
+Yukarıda modelin sonuçları görülüyor. Fakat Accuracy, Sensitivity, Specificity, Kappa gibi birçok metrik ölçülmüş. Bunların hepsi iyi olsa bile bu modelin başarılı olduğu anlamına gelmez. Şöyle bir örnek verelim; 100 tane kedi köpek resmi arasından hangisinin kedi hangisinin köpek olduğunu bulmak istediğimizde, eğer test setimizde sadece 10 kedi resmi varsa ve model hepsini köpek olarak tahmin etmişse, Accuracy %90 ve Sensitivity %100 çıkmasına rağmen Specificity 0% çıkar. Köpek olma durumunu pozitif olarak belirlediğimizde;
 
-Sensitivity = TP/(TP + FN) = 90% (Modelin köpekleri tanıma durumu)
+Sensitivity = TP/(TP + FN) = 100% (Modelin köpekleri tanıma durumu)
+
 Specificity = TN/(TN + FP) = 0%  (Modelin kedileri tanıma durumu)
-Accuracy = (TN + TP)/(TN+TP+FN+FP) = 90% (Ortak başarı)
 
-Bu demektir ki bizim modelimiz kedi olma durumunu hiç öğrenememiş. Yani karşımıza bir kedi geldiğinde onu tanımamız mümküğn değil. Hatta ve hatta model hiç bir şey öğrenememiş ve her gelen veriye köpek diyip geçmiş olabilir. Yani böyle bir durumda model aslında köpekleri de tanımıyor olabilir. 
+Accuracy = (TN + TP)/(TN+TP+FN+FP) = 90% (Toplam başarı)
+
+Bu demektir ki bizim modelimiz kedi olma durumunu hiç öğrenememiş. Yani karşımıza bir kedi geldiğinde onu tanımamız mümkün değil. Hatta ve hatta model hiç bir şey öğrenememiş ve her gelen veriye köpek diyip geçmiş de olabilir. Yani böyle bir durumda model aslında köpekleri de tanımıyor olabilir. 
 
 Dolayısıyla tek bir ölçüm yöntemine, hatta 2-3 tanesine göre bile karar vermek doğru değildir. ROC eğrisi çizdirmek, F-Testi değeri, vs. gibi başka yöntemler de her zaman tercih edilmelidir.
 
 
-
+## SON 
 
 
 
